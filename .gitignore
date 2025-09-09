@@ -1,0 +1,11 @@
+# Docker
+Dockerfile
+.dockerignore
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Логи и временные файлы
+*.log
+*.tmp
