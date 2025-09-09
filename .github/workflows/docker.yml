@@ -1,0 +1,33 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build Docker image
+      run: |
+        docker build -t my-webapp:latest .
+        echo "Docker image built successfully!"
+
+    - name: List images (for debugging)
+      run: docker images
+
+    - name: Test Docker image
+      run: |
+        docker run --rm -d -p 8080:80 --name test-container my-webapp:latest
+        sleep 5
+        docker stop test-container
+        echo "Docker container test completed!"
