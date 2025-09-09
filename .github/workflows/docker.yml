@@ -43,18 +43,19 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           echo "🚀 Starting deployment..."
-          # Логинимся в Docker Hub на сервере
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          
+          # Логинимся в Docker Hub
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           
           # Останавливаем и удаляем старый контейнер
-          docker stop my-webapp-container || true
-          docker rm my-webapp-container || true
+          sudo docker stop my-webapp-container || true
+          sudo docker rm my-webapp-container || true
           
           # Pull последнего образа
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:latest
+          sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:latest
           
           # Запускаем новый контейнер
-          docker run -d \
+          sudo docker run -d \
             --name my-webapp-container \
             -p 80:80 \
             --restart unless-stopped \
@@ -64,4 +65,4 @@ jobs:
           echo "🌐 Application available at: http://${{ secrets.SERVER_IP }}"
           
           # Очистка старых образов (опционально)
-          docker image prune -af
+          sudo docker image prune -af
