@@ -32,17 +32,14 @@ jobs:
           ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:latest
           ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:${{ github.sha }}
 
-    - name: Verify push
-      run: |
-        echo "Image should be available at:"
-        echo "https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/my-webapp"
-
-    - name: List images (for debugging)
-      run: docker images
-
     - name: Test Docker image
       run: |
-        docker run --rm -d -p 8080:80 --name test-container my-webapp:latest
+        docker run --rm -d -p 8080:80 --name test-container ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:latest
         sleep 5
         docker stop test-container
         echo "Docker container test completed!"
+
+    - name: Verify push
+      run: |
+        echo "Image successfully pushed to:"
+        echo "https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/my-webapp"
