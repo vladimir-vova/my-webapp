@@ -1,13 +1,11 @@
-name: Docker Build and Push
+name: Build, Push and Deploy
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,14 +30,38 @@ jobs:
           ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:latest
           ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:${{ github.sha }}
 
-    - name: Test Docker image
-      run: |
-        docker run --rm -d -p 8080:80 --name test-container ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:latest
-        sleep 5
-        docker stop test-container
-        echo "Docker container test completed!"
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push  # Ждет завершения сборки
 
-    - name: Verify push
-      run: |
-        echo "Image successfully pushed to:"
-        echo "https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/my-webapp"
+    steps:
+    - name: Deploy to production server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          echo "🚀 Starting deployment..."
+          # Логинимся в Docker Hub на сервере
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          
+          # Останавливаем и удаляем старый контейнер
+          docker stop my-webapp-container || true
+          docker rm my-webapp-container || true
+          
+          # Pull последнего образа
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:latest
+          
+          # Запускаем новый контейнер
+          docker run -d \
+            --name my-webapp-container \
+            -p 80:80 \
+            --restart unless-stopped \
+            ${{ secrets.DOCKERHUB_USERNAME }}/my-webapp:latest
+          
+          echo "✅ Deployment completed successfully!"
+          echo "🌐 Application available at: http://${{ secrets.SERVER_IP }}"
+          
+          # Очистка старых образов (опционально)
+          docker image prune -af
